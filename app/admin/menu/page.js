@@ -1,36 +1,56 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
-import { useAdminStore } from '../../../store/adminStore';
-import MenuItemRow from '../../../components/admin/MenuItemRow';
-import MenuItemFormModal from '../../../components/admin/MenuItemFormModal';
-import ConfirmModal from '../../../components/admin/ConfirmModal';
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import { useAdminStore } from "../../../store/adminStore";
+import { useAuthStore } from "../../../store/authStore";
+import MenuItemRow from "../../../components/admin/MenuItemRow";
+import MenuItemFormModal from "../../../components/admin/MenuItemFormModal";
+import ConfirmModal from "../../../components/admin/ConfirmModal";
 
 export default function MenuManagementPage() {
-  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem, toggleItemAvailability } = useAdminStore();
-  
-  const [mounted, setMounted] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('All');
-  const categories = ['All', 'Snacks', 'Drinks', 'Meals', 'Desserts'];
+  const router = useRouter();
+  const isAdmin = useAuthStore((state) => state.isAdmin);
+  const {
+    menuItems,
+    loading,
+    fetchMenuItems,
+    addMenuItem,
+    updateMenuItem,
+    deleteMenuItem,
+    toggleItemAvailability,
+  } = useAdminStore();
+
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const categories = ["All", "Snacks", "Drinks", "Meals", "Desserts"];
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  
+
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
-    item: null
+    item: null,
   });
 
+  const [formSubmitting, setFormSubmitting] = useState(false);
+
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!isAdmin) {
+      router.push("/admin/login");
+      return;
+    }
 
-  if (!mounted) return null;
+    fetchMenuItems()
+      .catch(() => {})
+      .finally(() => setInitialLoading(false));
+  }, [isAdmin, router, fetchMenuItems]);
 
-  const filteredItems = activeCategory === 'All' 
-    ? menuItems 
-    : menuItems.filter(item => item.category === activeCategory);
+  if (!isAdmin) return null;
+
+  const filteredItems =
+    activeCategory === "All" ? menuItems : menuItems.filter((item) => item.category === activeCategory);
 
   // Handlers
   const handleAddNew = () => {
@@ -43,49 +63,62 @@ export default function MenuManagementPage() {
     setIsFormOpen(true);
   };
 
-  const handleSaveForm = (formData) => {
-    if (editingItem) {
-      updateMenuItem(editingItem.id, formData);
-    } else {
-      addMenuItem(formData);
+  const handleSaveForm = async (formData) => {
+    setFormSubmitting(true);
+    try {
+      if (editingItem) {
+        await updateMenuItem(editingItem.id || editingItem._id, formData);
+      } else {
+        await addMenuItem(formData);
+      }
+      setIsFormOpen(false);
+    } catch (err) {
+      // Could show a toast
+    } finally {
+      setFormSubmitting(false);
     }
-    setIsFormOpen(false);
   };
 
   const handleDeleteClick = (item) => {
     setConfirmModal({
       isOpen: true,
-      item
+      item,
     });
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (confirmModal.item) {
-      deleteMenuItem(confirmModal.item.id);
+      try {
+        await deleteMenuItem(confirmModal.item.id || confirmModal.item._id);
+      } catch (err) {
+        // Could show a toast
+      }
     }
     setConfirmModal({ isOpen: false, item: null });
   };
 
-  const handleToggleAvailability = (item) => {
-    toggleItemAvailability(item.id);
+  const handleToggleAvailability = async (item) => {
+    try {
+      await toggleItemAvailability(item.id || item._id);
+    } catch (err) {
+      // Could show a toast
+    }
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      
       {/* Top Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        
         {/* Category Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar w-full sm:w-auto">
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
-                activeCategory === cat 
-                  ? 'bg-gray-900 text-white shadow-md' 
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                activeCategory === cat
+                  ? "bg-gray-900 text-white shadow-md"
+                  : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
               }`}
             >
               {cat}
@@ -94,7 +127,7 @@ export default function MenuManagementPage() {
         </div>
 
         {/* Add Button */}
-        <button 
+        <button
           onClick={handleAddNew}
           className="flex items-center gap-2 bg-primary hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm"
         >
@@ -105,11 +138,17 @@ export default function MenuManagementPage() {
 
       {/* Main Content Area — Table Only */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[500px]">
-        {filteredItems.length === 0 ? (
+        {initialLoading || loading ? (
+          <div className="flex items-center justify-center h-[400px]">
+            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center h-[400px]">
             <p className="text-xl font-bold text-gray-900 mb-2">No items found</p>
             <p className="text-gray-500 mb-6">There are no menu items in this category.</p>
-            <button onClick={handleAddNew} className="text-primary font-bold hover:underline">Add one now</button>
+            <button onClick={handleAddNew} className="text-primary font-bold hover:underline">
+              Add one now
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -125,10 +164,10 @@ export default function MenuManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredItems.map(item => (
-                  <MenuItemRow 
-                    key={item.id} 
-                    item={item} 
+                {filteredItems.map((item) => (
+                  <MenuItemRow
+                    key={item.id || item._id}
+                    item={item}
                     onEdit={handleEdit}
                     onDelete={handleDeleteClick}
                     onToggle={handleToggleAvailability}
@@ -141,14 +180,15 @@ export default function MenuManagementPage() {
       </div>
 
       {/* Modals */}
-      <MenuItemFormModal 
+      <MenuItemFormModal
         isOpen={isFormOpen}
         item={editingItem}
         onSave={handleSaveForm}
         onClose={() => setIsFormOpen(false)}
+        submitting={formSubmitting}
       />
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={confirmModal.isOpen}
         title="Delete Item?"
         message={`Are you sure you want to delete "${confirmModal.item?.name}"? This cannot be undone.`}
@@ -159,8 +199,13 @@ export default function MenuManagementPage() {
       />
 
       <style jsx global>{`
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
     </div>
   );

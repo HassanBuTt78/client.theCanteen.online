@@ -1,33 +1,63 @@
 'use client';
 import { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Check, Clock } from 'lucide-react';
-import { mockOrders } from '../../../../data/mockOrders';
+import { useAuthStore } from '../../../../store/authStore';
+import { getOrderById } from '../../../../lib/api/orders';
 import StatusBadge from '../../../../components/customer/StatusBadge';
 
 export default function OrderDetailPage(props) {
   const params = use(props.params);
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    let found = mockOrders.find(o => o.id === params.orderId);
-    
-    // Fallback for dynamically placed mock orders
-    if (!found && params.orderId.startsWith('ORD-')) {
-      found = {
-        id: params.orderId,
-        items: [{ id: 'mock', name: 'Your Custom Order Items', quantity: 1, price: 0 }],
-        totalAmount: '...',
-        status: 'Pending',
-        pickupTime: 'ASAP',
-        placedAt: new Date().toISOString(),
-      };
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
     }
-    
-    setOrder(found || null);
-  }, [params.orderId]);
 
-  if (!order) return <div className="p-8 text-center text-gray-500 font-bold">Loading...</div>;
+    getOrderById(params.orderId)
+      .then((data) => {
+        setOrder(data);
+      })
+      .catch((err) => {
+        setError(err.message || 'Order not found');
+      })
+      .finally(() => setLoading(false));
+  }, [params.orderId, isAuthenticated, router]);
+
+  if (!isAuthenticated) return null;
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="animate-pulse space-y-4 max-w-2xl mx-auto">
+          <div className="h-8 bg-gray-100 rounded-lg w-48 mx-auto" />
+          <div className="h-48 bg-gray-100 rounded-2xl" />
+          <div className="h-32 bg-gray-100 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-500 font-bold mb-2">Failed to load order</p>
+        <p className="text-sm text-text-muted mb-4">{error}</p>
+        <Link href="/my-orders" className="text-primary font-bold hover:underline">
+          Back to My Orders
+        </Link>
+      </div>
+    );
+  }
+
+  if (!order) return null;
 
   const stepperSteps = ['Pending', 'Confirmed', 'Preparing', 'Ready for Pickup', 'Completed'];
   const currentIndex = stepperSteps.indexOf(order.status);
@@ -41,13 +71,13 @@ export default function OrderDetailPage(props) {
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="text-xl font-black">{order.id}</h1>
+            <h1 className="text-xl font-black">{order.id || order._id}</h1>
             <p className="text-sm text-text-muted mt-1">{new Date(order.placedAt).toLocaleString()}</p>
           </div>
           <StatusBadge status={order.status} />
         </div>
 
-        {/* Stepper logic */}
+        {/* Stepper */}
         {order.status === 'Cancelled' ? (
           <div className="bg-red-50 text-red-700 p-4 rounded-xl font-semibold text-sm text-center">
             This order was cancelled.
@@ -97,8 +127,8 @@ export default function OrderDetailPage(props) {
       <h3 className="font-bold mb-3 text-lg">Order Details</h3>
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
         <div className="space-y-3 mb-4 border-b border-gray-100 pb-4">
-          {order.items.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm">
+          {order.items.map((item, idx) => (
+            <div key={item.id || item._id || idx} className="flex justify-between text-sm">
               <span className="text-gray-600">{item.quantity}x {item.name}</span>
               <span className="font-bold">Rs. {item.price * item.quantity}</span>
             </div>

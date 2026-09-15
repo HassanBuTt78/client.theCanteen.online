@@ -1,17 +1,19 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, LogOut } from 'lucide-react';
+import { ShoppingCart, LogOut, User } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
+import { useAuthStore } from '../../store/authStore';
 
 export default function TopHeader() {
   const pathname = usePathname();
   const cartCount = useCartStore((state) => state.getCartCount());
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   const navItems = [
     { name: 'Home', path: '/' },
     { name: 'Menu', path: '/menu' },
-    { name: 'My Orders', path: '/my-orders' },
+    ...(isAuthenticated ? [{ name: 'My Orders', path: '/my-orders' }] : []),
   ];
 
   return (
@@ -46,10 +48,29 @@ export default function TopHeader() {
               </span>
             )}
           </Link>
-          <button className="text-text-muted hover:text-red-500 transition-colors flex items-center gap-2 text-sm font-semibold">
-            <LogOut size={20} />
-            Logout
-          </button>
+          
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <User size={16} className="text-text-muted" />
+                <span className="font-semibold text-text-muted">{user?.name || 'User'}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="text-text-muted hover:text-red-500 transition-colors flex items-center gap-2 text-sm font-semibold"
+              >
+                <LogOut size={20} />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="bg-primary hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </header>

@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '../../../store/cartStore';
-import { pickupSlots } from '../../../data/pickupSlots';
+import { useAuthStore } from '../../../store/authStore';
+import { getPickupSlots } from '../../../lib/api/pickupSlots';
+import { placeOrder } from '../../../lib/api/orders';
 import { Loader2 } from 'lucide-react';
 
 export default function CheckoutPage() {
@@ -10,28 +12,61 @@ export default function CheckoutPage() {
   const cartItems = useCartStore((state) => state.cartItems);
   const cartTotal = useCartStore((state) => state.getCartTotal());
   const clearCart = useCartStore((state) => state.clearCart);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+  const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [slotError, setSlotError] = useState('');
 
   useEffect(() => {
     if (cartItems.length === 0 && !loading) {
       router.push('/cart');
+      return;
     }
+
+    // Fetch pickup slots
+    getPickupSlots()
+      .then((data) => {
+        setSlots(data.slots || []);
+      })
+      .catch((err) => {
+        setSlotError(err.message || 'Failed to load pickup slots');
+      })
+      .finally(() => setPageLoading(false));
   }, [cartItems, router, loading]);
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!selectedSlot) return;
     setLoading(true);
+    setError('');
 
-    setTimeout(() => {
-      const orderId = `ORD-${Date.now().toString().slice(-4)}`;
+    // Require auth for placing order
+    if (!isAuthenticated) {
+      // Save cart state and redirect to login with return URL
+      router.push(`/login?redirect=/checkout`);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const items = cartItems.map((item) => ({
+        menuItemId: item.id || item._id,
+        quantity: item.quantity,
+      }));
+
+      const order = await placeOrder(items, selectedSlot.id || selectedSlot._id);
       clearCart();
-      router.push(`/order-confirmation/${orderId}?time=${encodeURIComponent(selectedSlot.time)}`);
-    }, 1000);
+      router.push(`/order-confirmation/${order.id || order._id}?time=${encodeURIComponent(selectedSlot.label || selectedSlot.time)}`);
+    } catch (err) {
+      setError(err.message || 'Failed to place order. Please try again.');
+      setLoading(false);
+    }
   };
 
-  if (cartItems.length === 0) return null;
+  if (pageLoading || cartItems.length === 0) return null;
 
   return (
     <div className="p-4 md:p-6 pb-24 md:pb-6 max-w-2xl mx-auto">
@@ -42,7 +77,7 @@ export default function CheckoutPage() {
         <h2 className="font-bold mb-4">Order Summary</h2>
         <div className="space-y-3 mb-4 border-b border-gray-100 pb-4">
           {cartItems.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm">
+            <div key={item.id || item._id} className="flex justify-between text-sm">
               <span className="text-gray-600">{item.quantity}x {item.name}</span>
               <span className="font-bold">Rs. {item.price * item.quantity}</span>
             </div>
@@ -57,39 +92,55 @@ export default function CheckoutPage() {
       {/* Section 2: Time Selection */}
       <section className="mb-6">
         <h2 className="font-bold mb-4">When do you want to pick up?</h2>
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-          {pickupSlots.map((slot) => (
-            <button
-              key={slot.id}
-              disabled={!slot.available}
-              onClick={() => setSelectedSlot(slot)}
-              className={`py-3 rounded-xl border text-sm font-bold transition-all ${
-                !slot.available
-                  ? 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed'
-                  : selectedSlot?.id === slot.id
-                  ? 'bg-primary/10 border-primary text-primary'
-                  : 'bg-white border-gray-200 text-gray-700 hover:border-primary/50'
-              }`}
-            >
-              {slot.label}
-              {!slot.available && <span className="block text-[10px] uppercase font-bold mt-0.5">Full</span>}
-            </button>
-          ))}
-        </div>
+        
+        {slotError ? (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold text-center">
+            {slotError}
+          </div>
+        ) : slots.length > 0 ? (
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+            {slots.map((slot) => (
+              <button
+                key={slot.id || slot._id}
+                disabled={!slot.available}
+                onClick={() => setSelectedSlot(slot)}
+                className={`py-3 rounded-xl border text-sm font-bold transition-all ${
+                  !slot.available
+                    ? 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed'
+                    : selectedSlot?.id === slot.id || selectedSlot?._id === slot._id
+                    ? 'bg-primary/10 border-primary text-primary'
+                    : 'bg-white border-gray-200 text-gray-700 hover:border-primary/50'
+                }`}
+              >
+                {slot.label || slot.time}
+                {!slot.available && <span className="block text-[10px] uppercase font-bold mt-0.5">Full</span>}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-text-muted text-sm">Loading available slots...</div>
+        )}
       </section>
 
       {/* Section 3: Payment Note */}
-      <section className="bg-blue-50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm font-semibold mb-8 flex items-start gap-3">
+      <section className="bg-blue-50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm font-semibold mb-4 flex items-start gap-3">
         <span className="text-lg">💵</span>
         <p>Payment is cash on pickup at the counter. Please bring exact change if possible.</p>
       </section>
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-semibold text-center mb-4">
+          {error}
+        </div>
+      )}
 
       <button
         disabled={!selectedSlot || loading}
         onClick={handlePlaceOrder}
         className="w-full bg-primary hover:bg-amber-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-4 rounded-xl transition-colors active:scale-[0.98] flex justify-center items-center h-[56px]"
       >
-        {loading ? <Loader2 className="animate-spin" /> : 'Place Order'}
+        {loading ? <Loader2 className="animate-spin" /> : isAuthenticated ? 'Place Order' : 'Sign In to Place Order'}
       </button>
     </div>
   );

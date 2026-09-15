@@ -1,36 +1,99 @@
 import { create } from 'zustand';
-import { adminOrders } from '../data/admin/adminOrders';
-import { adminMenuItems } from '../data/admin/adminMenuItems';
+import {
+  adminGetMenuItems,
+  adminCreateMenuItem,
+  adminUpdateMenuItem,
+  adminDeleteMenuItem,
+  adminToggleAvailability,
+  adminGetOrders,
+  adminUpdateOrderStatus,
+} from '../lib/api/admin';
 
-export const useAdminStore = create((set) => ({
-  orders: adminOrders,
-  menuItems: adminMenuItems,
+/**
+ * Admin store — fetches data from API and provides local mutations.
+ * Actions are async, calling the API then updating local state.
+ */
+export const useAdminStore = create((set, get) => ({
+  orders: [],
+  menuItems: [],
+  loading: false,
 
-  // Order actions
-  updateOrderStatus: (orderId, newStatus) => set((state) => ({
-    orders: state.orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    )
-  })),
+  /** Fetch orders from API */
+  fetchOrders: async (query = {}) => {
+    set({ loading: true });
+    try {
+      const data = await adminGetOrders(query);
+      set({ orders: data.orders, loading: false });
+      return data;
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
 
-  // Menu actions
-  addMenuItem: (item) => set((state) => ({
-    menuItems: [...state.menuItems, { ...item, id: `ITEM-${Date.now()}` }]
-  })),
+  /** Update order status via API */
+  updateOrderStatus: async (orderId, newStatus) => {
+    await adminUpdateOrderStatus(orderId, newStatus);
+    // Update local state optimistically
+    set((state) => ({
+      orders: state.orders.map((order) =>
+        order.id === orderId ? { ...order, status: newStatus } : order
+      ),
+    }));
+  },
 
-  updateMenuItem: (id, updates) => set((state) => ({
-    menuItems: state.menuItems.map(item => 
-      item.id === id ? { ...item, ...updates } : item
-    )
-  })),
+  /** Fetch menu items from API */
+  fetchMenuItems: async () => {
+    set({ loading: true });
+    try {
+      const items = await adminGetMenuItems();
+      set({ menuItems: items, loading: false });
+      return items;
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
 
-  deleteMenuItem: (id) => set((state) => ({
-    menuItems: state.menuItems.filter(item => item.id !== id)
-  })),
+  /** Create menu item via API */
+  addMenuItem: async (data) => {
+    const item = await adminCreateMenuItem(data);
+    set((state) => ({
+      menuItems: [...state.menuItems, item],
+    }));
+    return item;
+  },
 
-  toggleItemAvailability: (id) => set((state) => ({
-    menuItems: state.menuItems.map(item => 
-      item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
-    )
-  }))
+  /** Update menu item via API */
+  updateMenuItem: async (id, data) => {
+    const updated = await adminUpdateMenuItem(id, data);
+    set((state) => ({
+      menuItems: state.menuItems.map((item) =>
+        item.id === id ? updated : item
+      ),
+    }));
+    return updated;
+  },
+
+  /** Delete menu item via API */
+  deleteMenuItem: async (id) => {
+    await adminDeleteMenuItem(id);
+    set((state) => ({
+      menuItems: state.menuItems.filter((item) => item.id !== id),
+    }));
+  },
+
+  /** Toggle availability via API */
+  toggleItemAvailability: async (id) => {
+    // Find current state to toggle
+    const item = get().menuItems.find((i) => i.id === id);
+    if (!item) return;
+    const updated = await adminToggleAvailability(id, !item.isAvailable);
+    set((state) => ({
+      menuItems: state.menuItems.map((i) =>
+        i.id === id ? updated : i
+      ),
+    }));
+    return updated;
+  },
 }));

@@ -1,31 +1,44 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../../store/authStore';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams?.get('redirect') || '/';
+  const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [form, setForm] = useState({ identifier: '', password: '' });
+  const [form, setForm] = useState({ phone: '', password: '' });
 
-  const handleSubmit = (e) => {
+  if (isAuthenticated) {
+    router.push('/');
+    return null;
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.identifier || !form.password) {
+    if (!form.phone || !form.password) {
       setError('Please fill in all fields');
       return;
     }
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      // Simulate auth
-      localStorage.setItem('isLoggedIn', 'true');
-      router.push('/');
-    }, 800);
+    try {
+      await login(form.phone, form.password);
+      router.push(redirect);
+    } catch (err) {
+      setError(err.body?.message || err.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,13 +59,13 @@ export default function LoginPage() {
         )}
 
         <div>
-          <label className="block text-sm font-bold mb-1.5 pl-1">Email / Roll Number</label>
+          <label className="block text-sm font-bold mb-1.5 pl-1">Phone Number</label>
           <input
-            type="text"
+            type="tel"
             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-            placeholder="e.g., ali@uni.edu.pk or 084569"
-            value={form.identifier}
-            onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+            placeholder="e.g., 03123456789"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
         </div>
 
@@ -60,7 +73,7 @@ export default function LoginPage() {
           <label className="block text-sm font-bold mb-1.5 pl-1">Password</label>
           <div className="relative">
             <input
-              type={showPwd ? "text" : "password"}
+              type={showPwd ? 'text' : 'password'}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm pr-12"
               placeholder="••••••••"
               value={form.password}
@@ -92,5 +105,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-8 text-gray-500">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

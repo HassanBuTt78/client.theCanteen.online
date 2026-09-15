@@ -1,10 +1,10 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search as SearchIcon } from 'lucide-react';
 import FoodCard from '../../../components/customer/FoodCard';
 import EmptyState from '../../../components/customer/EmptyState';
-import { menuItems } from '../../../data/menuItems';
+import { getMenuItems } from '../../../lib/api/menu';
 
 function MenuContent() {
   const searchParams = useSearchParams();
@@ -12,14 +12,28 @@ function MenuContent() {
   
   const [activeCategory, setActiveCategory] = useState(defaultCategory);
   const [searchQuery, setSearchQuery] = useState('');
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const categories = ['All', 'Snacks', 'Drinks', 'Meals', 'Desserts'];
 
-  const filteredItems = menuItems.filter((item) => {
-    const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    
+    const filters = {};
+    if (activeCategory !== 'All') filters.category = activeCategory;
+    if (searchQuery) filters.search = searchQuery;
+
+    getMenuItems(filters)
+      .then(setItems)
+      .catch((err) => {
+        setError(err.message || 'Failed to load menu');
+        setItems([]);
+      })
+      .finally(() => setLoading(false));
+  }, [activeCategory, searchQuery]);
 
   return (
     <div className="p-4 md:p-6 pb-24 md:pb-6">
@@ -30,7 +44,10 @@ function MenuContent() {
           type="text"
           placeholder="Search for food..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setActiveCategory('All');
+          }}
           className="w-full bg-white border border-gray-100 shadow-sm rounded-2xl py-3.5 pl-12 pr-4 outline-none focus:border-primary/50 text-sm font-semibold"
         />
       </div>
@@ -55,11 +72,28 @@ function MenuContent() {
         ))}
       </div>
 
-      {/* Grid */}
-      {filteredItems.length > 0 ? (
+      {/* Loading */}
+      {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredItems.map(item => (
-            <FoodCard key={item.id} item={item} />
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-gray-100 rounded-2xl h-56 animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-500 font-bold mb-2">Failed to load menu</p>
+          <p className="text-sm text-text-muted">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 text-primary font-bold hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : items.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {items.map(item => (
+            <FoodCard key={item.id || item._id} item={item} />
           ))}
         </div>
       ) : (

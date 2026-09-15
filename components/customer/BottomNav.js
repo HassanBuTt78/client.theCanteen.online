@@ -3,15 +3,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Coffee, ClipboardList, ShoppingCart } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
+import { useAuthStore } from '../../store/authStore';
 
 export default function BottomNav() {
   const pathname = usePathname();
   const cartCount = useCartStore((state) => state.getCartCount());
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Menu', path: '/menu', icon: Coffee },
-    { name: 'My Orders', path: '/my-orders', icon: ClipboardList },
+    ...(isAuthenticated ? [{ name: 'My Orders', path: '/my-orders', icon: ClipboardList }] : []),
     { name: 'Cart', path: '/cart', icon: ShoppingCart },
   ];
 

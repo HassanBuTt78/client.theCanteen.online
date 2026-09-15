@@ -2,37 +2,43 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UtensilsCrossed, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useAuthStore } from '../../../store/authStore';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const adminLogin = useAuthStore((state) => state.adminLogin);
+  const isAdmin = useAuthStore((state) => state.isAdmin);
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Auto-redirect if already logged in
   useEffect(() => {
-    if (localStorage.getItem('isAdminLoggedIn')) {
+    if (isAdmin) {
       router.push('/admin');
     }
-  }, [router]);
+  }, [isAdmin, router]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!formData.username || !formData.password) {
+    if (!formData.identifier || !formData.password) {
       setError('Please enter your credentials');
       return;
     }
 
     setLoading(true);
 
-    // Simulate network delay
-    setTimeout(() => {
-      localStorage.setItem('isAdminLoggedIn', 'true');
+    try {
+      await adminLogin(formData.identifier, formData.password);
       router.push('/admin');
-    }, 800);
+    } catch (err) {
+      setError(err.body?.message || err.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,13 +72,13 @@ export default function AdminLoginPage() {
             )}
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Staff ID / Username</label>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Username / Email</label>
               <input
                 type="text"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                value={formData.identifier}
+                onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
-                placeholder="Enter your staff ID"
+                placeholder="Enter your username or email"
               />
             </div>
 

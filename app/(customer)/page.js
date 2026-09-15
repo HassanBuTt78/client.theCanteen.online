@@ -2,29 +2,42 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import FoodCard from '../../components/customer/FoodCard';
-import { menuItems } from '../../data/menuItems';
+import { getMenuItems } from '../../lib/api/menu';
 
 export default function HomePage() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const [featuredItems, setFeaturedItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    setMounted(true);
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (!isLoggedIn) {
-      router.push('/login');
-    }
-  }, [router]);
+    // Grab the user's name from auth store if logged in
+    try {
+      const stored = localStorage.getItem('canteen_user');
+      if (stored) {
+        const user = JSON.parse(stored);
+        setUserName(user.name || '');
+      }
+    } catch {}
 
-  if (!mounted) return null; // Avoid hydration mismatch
+    // Fetch featured menu items
+    getMenuItems({ available: true })
+      .then((items) => {
+        setFeaturedItems(items.slice(0, 5));
+      })
+      .catch(() => {
+        // Fallback silently — show nothing
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const categories = ['Snacks', 'Drinks', 'Meals', 'Desserts'];
-  const featuredItems = menuItems.slice(0, 5); // Take first 5 as featured
+  const greeting = userName ? `Good morning, ${userName.split(' ')[0]} 👋` : 'What are you craving today?';
 
   return (
     <div className="p-4 md:p-6 pb-24 md:pb-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-black">Good morning, Ali 👋</h1>
+        <h1 className="text-2xl font-black">{greeting}</h1>
         <p className="text-text-muted mt-1">What are you craving today?</p>
       </header>
 
@@ -47,13 +60,27 @@ export default function HomePage() {
           <h2 className="text-lg font-bold">Popular Right Now</h2>
         </div>
         
-        <div className="flex gap-4 overflow-x-auto pb-6 hide-scrollbar snap-x">
-          {featuredItems.map((item) => (
-            <div key={item.id} className="min-w-[200px] w-[200px] snap-start">
-              <FoodCard item={item} />
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex gap-4 overflow-x-auto pb-6 hide-scrollbar snap-x">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="min-w-[200px] w-[200px] bg-gray-100 rounded-2xl h-48 animate-pulse snap-start" />
+            ))}
+          </div>
+        ) : featuredItems.length > 0 ? (
+          <div className="flex gap-4 overflow-x-auto pb-6 hide-scrollbar snap-x">
+            {featuredItems.map((item) => (
+              <div key={item.id || item._id} className="min-w-[200px] w-[200px] snap-start">
+                <FoodCard item={item} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-6 hide-scrollbar snap-x">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="min-w-[200px] w-[200px] bg-gray-100 rounded-2xl h-48 animate-pulse snap-start" />
+            ))}
+          </div>
+        )}
       </section>
 
       <style jsx global>{`
@@ -61,8 +88,8 @@ export default function HomePage() {
           display: none;
         }
         .hide-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </div>
