@@ -28,7 +28,7 @@ export default function CartPage() {
         <h1 className="text-2xl font-black mb-6">Your Cart</h1>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {cartItems.map(item => (
-            <CartItem key={item.id} item={item} />
+            <CartItem key={item.id || item._id} item={item} />
           ))}
         </div>
       </div>

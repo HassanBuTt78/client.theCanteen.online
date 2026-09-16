@@ -73,12 +73,13 @@ export default function LiveDashboardPage() {
   };
 
   const handleActionClick = (order, newStatus, title, variant = "primary") => {
+    const orderId = order.id || order._id;
     setConfirmModalState({
       isOpen: true,
-      orderId: order.id,
+      orderId,
       newStatus,
       title,
-      message: `Are you sure you want to change order ${order.id} status to ${newStatus}?`,
+      message: `Are you sure you want to change order ${orderId} status to ${newStatus}?`,
       variant,
     });
   };

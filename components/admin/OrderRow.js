@@ -63,7 +63,7 @@ export default function OrderRow({ order, onActionClick, onRowClick }) {
       onClick={() => onRowClick(order)}
       className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
     >
-      <td className="py-4 px-6 font-mono text-sm font-semibold">{order.id}</td>
+      <td className="py-4 px-6 font-mono text-sm font-semibold">{order.id || order._id}</td>
       <td className="py-4 px-6">
         <p className="font-bold text-sm text-gray-900">{order.studentName}</p>
         <p className="text-xs text-gray-500">{order.rollNumber}</p>

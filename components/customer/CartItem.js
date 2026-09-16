@@ -19,21 +19,21 @@ export default function CartItem({ item }) {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1 border border-gray-200">
             <button 
-              onClick={() => updateQuantity(item.id, item.quantity - 1)} 
+              onClick={() => updateQuantity(item.id || item._id, item.quantity - 1)} 
               className="p-1.5 hover:bg-white rounded-md text-text-muted active:scale-90 transition-transform"
             >
               <Minus size={16} />
             </button>
             <span className="font-bold text-sm w-4 text-center">{item.quantity}</span>
             <button 
-              onClick={() => updateQuantity(item.id, item.quantity + 1)} 
+              onClick={() => updateQuantity(item.id || item._id, item.quantity + 1)} 
               className="p-1.5 hover:bg-white rounded-md text-primary active:scale-90 transition-transform"
             >
               <Plus size={16} />
             </button>
           </div>
           <button 
-            onClick={() => removeItem(item.id)}
+            onClick={() => removeItem(item.id || item._id)}
             className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg active:scale-90 transition-all"
           >
             <Trash2 size={18} />

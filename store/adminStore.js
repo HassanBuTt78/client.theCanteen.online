@@ -37,7 +37,7 @@ export const useAdminStore = create((set, get) => ({
     // Update local state optimistically
     set((state) => ({
       orders: state.orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
+        (order.id || order._id) === orderId ? { ...order, status: newStatus } : order
       ),
     }));
   },
@@ -69,7 +69,7 @@ export const useAdminStore = create((set, get) => ({
     const updated = await adminUpdateMenuItem(id, data);
     set((state) => ({
       menuItems: state.menuItems.map((item) =>
-        item.id === id ? updated : item
+        (item.id || item._id) === id ? updated : item
       ),
     }));
     return updated;
@@ -79,19 +79,19 @@ export const useAdminStore = create((set, get) => ({
   deleteMenuItem: async (id) => {
     await adminDeleteMenuItem(id);
     set((state) => ({
-      menuItems: state.menuItems.filter((item) => item.id !== id),
+      menuItems: state.menuItems.filter((item) => (item.id || item._id) !== id),
     }));
   },
 
   /** Toggle availability via API */
   toggleItemAvailability: async (id) => {
     // Find current state to toggle
-    const item = get().menuItems.find((i) => i.id === id);
+    const item = get().menuItems.find((i) => (i.id || i._id) === id);
     if (!item) return;
     const updated = await adminToggleAvailability(id, !item.isAvailable);
     set((state) => ({
       menuItems: state.menuItems.map((i) =>
-        i.id === id ? updated : i
+        (i.id || i._id) === id ? updated : i
       ),
     }));
     return updated;
