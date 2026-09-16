@@ -1,12 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuthStore } from '../../store/authStore';
 import AdminSidebar from '../../components/admin/AdminSidebar';
 import AdminTopBar from '../../components/admin/AdminTopBar';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const isAdmin = useAuthStore((state) => state.isAdmin);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -18,13 +20,12 @@ export default function AdminLayout({ children }) {
       return;
     }
 
-    const isAdmin = localStorage.getItem('isAdminLoggedIn');
     if (!isAdmin) {
       router.push('/admin/login');
     } else {
       setIsAuthorized(true);
     }
-  }, [pathname, router]);
+  }, [pathname, router, isAdmin]);
 
   if (!mounted || !isAuthorized) {
     return (
