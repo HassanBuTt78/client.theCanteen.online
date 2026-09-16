@@ -34,14 +34,22 @@ export default function LiveDashboardPage() {
   const filters = ["All", "Pending", "Confirmed", "Preparing", "Ready for Pickup", "Completed", "Cancelled"];
 
   useEffect(() => {
+    if (isAdmin === null) return;
     if (!isAdmin) {
       router.push("/admin/login");
       return;
     }
 
+    let cancelled = false;
     fetchOrders()
       .catch(() => {})
-      .finally(() => setInitialLoading(false));
+      .finally(() => {
+        if (!cancelled) setInitialLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAdmin, router, fetchOrders]);
 
   // Derived stats

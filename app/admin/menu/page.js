@@ -37,6 +37,7 @@ export default function MenuManagementPage() {
   const [formSubmitting, setFormSubmitting] = useState(false);
 
   useEffect(() => {
+    if (isAdmin === null) return;
     if (!isAdmin) {
       router.push("/admin/login");
       return;
