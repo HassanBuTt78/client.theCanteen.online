@@ -53,13 +53,13 @@ export default function CheckoutPage() {
 
     try {
       const items = cartItems.map((item) => ({
-        menuItemId: item.id || item._id,
+        menuItemId: item._id,
         quantity: item.quantity,
       }));
 
-      const order = await placeOrder(items, selectedSlot.id || selectedSlot._id);
+      const order = await placeOrder(items, selectedSlot._id);
       clearCart();
-      router.push(`/order-confirmation/${order.id || order._id}?time=${encodeURIComponent(selectedSlot.label || selectedSlot.time)}`);
+      router.push(`/order-confirmation/${order._id}?time=${encodeURIComponent(selectedSlot.label || selectedSlot.time)}`);
     } catch (err) {
       setError(err.message || 'Failed to place order. Please try again.');
       setLoading(false);
@@ -77,7 +77,7 @@ export default function CheckoutPage() {
         <h2 className="font-bold mb-4">Order Summary</h2>
         <div className="space-y-3 mb-4 border-b border-gray-100 pb-4">
           {cartItems.map((item) => (
-            <div key={item.id || item._id} className="flex justify-between text-sm">
+            <div key={item._id} className="flex justify-between text-sm">
               <span className="text-gray-600">{item.quantity}x {item.name}</span>
               <span className="font-bold">Rs. {item.price * item.quantity}</span>
             </div>
@@ -101,13 +101,13 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
             {slots.map((slot) => (
               <button
-                key={slot.id || slot._id}
+                key={slot._id}
                 disabled={!slot.available}
                 onClick={() => setSelectedSlot(slot)}
                 className={`py-3 rounded-xl border text-sm font-bold transition-all ${
                   !slot.available
                     ? 'bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed'
-                    : selectedSlot?.id === slot.id || selectedSlot?._id === slot._id
+                    : selectedSlot?._id === slot._id
                     ? 'bg-primary/10 border-primary text-primary'
                     : 'bg-white border-gray-200 text-gray-700 hover:border-primary/50'
                 }`}

@@ -82,7 +82,7 @@ export default function MyOrdersPage() {
           </div>
         ) : orders.length > 0 ? (
           orders.map(order => (
-            <OrderCard key={order.id || order._id} order={order} />
+            <OrderCard key={order._id} order={order} />
           ))
         ) : (
           <EmptyState 

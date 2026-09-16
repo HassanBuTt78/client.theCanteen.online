@@ -71,7 +71,7 @@ export default function OrderDetailPage(props) {
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="text-xl font-black">{order.id || order._id}</h1>
+            <h1 className="text-xl font-black">{order._id}</h1>
             <p className="text-sm text-text-muted mt-1">{new Date(order.placedAt).toLocaleString()}</p>
           </div>
           <StatusBadge status={order.status} />
@@ -128,7 +128,7 @@ export default function OrderDetailPage(props) {
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
         <div className="space-y-3 mb-4 border-b border-gray-100 pb-4">
           {order.items.map((item, idx) => (
-            <div key={item.id || item._id || idx} className="flex justify-between text-sm">
+            <div key={item._id || idx} className="flex justify-between text-sm">
               <span className="text-gray-600">{item.quantity}x {item.name}</span>
               <span className="font-bold">Rs. {item.price * item.quantity}</span>
             </div>

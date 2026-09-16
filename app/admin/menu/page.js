@@ -68,7 +68,7 @@ export default function MenuManagementPage() {
     setFormSubmitting(true);
     try {
       if (editingItem) {
-        await updateMenuItem(editingItem.id || editingItem._id, formData);
+        await updateMenuItem(editingItem._id, formData);
       } else {
         await addMenuItem(formData);
       }
@@ -90,7 +90,7 @@ export default function MenuManagementPage() {
   const handleConfirmDelete = async () => {
     if (confirmModal.item) {
       try {
-        await deleteMenuItem(confirmModal.item.id || confirmModal.item._id);
+        await deleteMenuItem(confirmModal.item._id);
       } catch (err) {
         // Could show a toast
       }
@@ -100,7 +100,7 @@ export default function MenuManagementPage() {
 
   const handleToggleAvailability = async (item) => {
     try {
-      await toggleItemAvailability(item.id || item._id);
+      await toggleItemAvailability(item._id);
     } catch (err) {
       // Could show a toast
     }
@@ -167,7 +167,7 @@ export default function MenuManagementPage() {
               <tbody className="divide-y divide-gray-50">
                 {filteredItems.map((item) => (
                   <MenuItemRow
-                    key={item.id || item._id}
+                    key={item._id}
                     item={item}
                     onEdit={handleEdit}
                     onDelete={handleDeleteClick}

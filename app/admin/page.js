@@ -73,13 +73,12 @@ export default function LiveDashboardPage() {
   };
 
   const handleActionClick = (order, newStatus, title, variant = "primary") => {
-    const orderId = order.id || order._id;
     setConfirmModalState({
       isOpen: true,
-      orderId,
+      orderId: order._id,
       newStatus,
       title,
-      message: `Are you sure you want to change order ${orderId} status to ${newStatus}?`,
+      message: `Are you sure you want to change order ${order._id} status to ${newStatus}?`,
       variant,
     });
   };
@@ -207,7 +206,7 @@ export default function LiveDashboardPage() {
               <tbody className="divide-y divide-gray-50">
                 {filteredOrders.map((order) => (
                   <OrderRow
-                    key={order.id || order._id}
+                    key={order._id}
                     order={order}
                     onRowClick={handleRowClick}
                     onActionClick={handleActionClick}

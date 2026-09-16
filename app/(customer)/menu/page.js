@@ -93,7 +93,7 @@ function MenuContent() {
       ) : items.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {items.map(item => (
-            <FoodCard key={item.id || item._id} item={item} />
+            <FoodCard key={item._id} item={item} />
           ))}
         </div>
       ) : (

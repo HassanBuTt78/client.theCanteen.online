@@ -3,11 +3,11 @@ import { create } from 'zustand';
 export const useCartStore = create((set, get) => ({
   cartItems: [],
   addItem: (item) => set((state) => {
-    const existing = state.cartItems.find(i => i.id === item.id);
+    const existing = state.cartItems.find(i => i._id === item._id);
     if (existing) {
       if (existing.quantity >= 10) return state; // Max 10 items
       return {
-        cartItems: state.cartItems.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)
+        cartItems: state.cartItems.map(i => i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i)
       };
     }
     return {
@@ -15,15 +15,15 @@ export const useCartStore = create((set, get) => ({
     };
   }),
   removeItem: (id) => set((state) => ({
-    cartItems: state.cartItems.filter(i => i.id !== id)
+    cartItems: state.cartItems.filter(i => i._id !== id)
   })),
   updateQuantity: (id, qty) => set((state) => {
     if (qty < 1) {
-      return { cartItems: state.cartItems.filter(i => i.id !== id) };
+      return { cartItems: state.cartItems.filter(i => i._id !== id) };
     }
     if (qty > 10) return state;
     return {
-      cartItems: state.cartItems.map(i => i.id === id ? { ...i, quantity: qty } : i)
+      cartItems: state.cartItems.map(i => i._id === id ? { ...i, quantity: qty } : i)
     };
   }),
   clearCart: () => set({ cartItems: [] }),

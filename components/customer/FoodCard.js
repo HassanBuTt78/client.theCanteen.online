@@ -7,13 +7,12 @@ export default function FoodCard({ item }) {
   const addItem = useCartStore((state) => state.addItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   
-  const itemId = item.id || item._id;
-  const cartItem = cartItems.find((i) => i.id === itemId);
+  const cartItem = cartItems.find((i) => i._id === item._id);
   const quantity = cartItem?.quantity || 0;
 
-  const handleAdd = () => addItem({ ...item, id: itemId });
-  const handleInc = () => updateQuantity(itemId, quantity + 1);
-  const handleDec = () => updateQuantity(itemId, quantity - 1);
+  const handleAdd = () => addItem(item);
+  const handleInc = () => updateQuantity(item._id, quantity + 1);
+  const handleDec = () => updateQuantity(item._id, quantity - 1);
 
   return (
     <div className={`relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col ${!item.isAvailable ? 'opacity-60' : ''}`}>

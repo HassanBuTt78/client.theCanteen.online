@@ -69,7 +69,7 @@ export default function HomePage() {
         ) : featuredItems.length > 0 ? (
           <div className="flex gap-4 overflow-x-auto pb-6 hide-scrollbar snap-x">
             {featuredItems.map((item) => (
-              <div key={item.id || item._id} className="min-w-[200px] w-[200px] snap-start">
+              <div key={item._id} className="min-w-[200px] w-[200px] snap-start">
                 <FoodCard item={item} />
               </div>
             ))}
