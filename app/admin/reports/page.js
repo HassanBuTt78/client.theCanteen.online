@@ -44,7 +44,7 @@ export default function SalesReportsPage() {
       ]);
       setSummary(summaryData);
       setOrderHistory(historyData.orders || []);
-      setTotalOrders(historyData.pagination?.total || 0);
+      setTotalOrders(historyData.pagination?.totalItems || 0);
       setTotalPages(historyData.pagination?.totalPages || 1);
     } catch (err) {
       // Silently handle
@@ -141,7 +141,7 @@ export default function SalesReportsPage() {
                 <span className="font-bold text-gray-900">Completed Orders</span>
               </div>
               <span className="text-3xl font-black text-green-600">
-                {summary.ordersByStatus?.completed || 0}
+                {summary.ordersByStatus?.Completed || 0}
               </span>
             </div>
 
@@ -151,7 +151,7 @@ export default function SalesReportsPage() {
                 <span className="font-bold text-gray-900">Cancelled Orders</span>
               </div>
               <span className="text-3xl font-black text-red-600">
-                {summary.ordersByStatus?.cancelled || 0}
+                {summary.ordersByStatus?.Cancelled || 0}
               </span>
             </div>
           </>
@@ -194,10 +194,10 @@ export default function SalesReportsPage() {
                   ) : (
                     orderHistory.map((order) => (
                       <tr key={order._id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-6 font-mono text-sm font-semibold">{order._id}</td>
+                        <td className="py-4 px-6 font-mono text-sm font-semibold">{order.orderId}</td>
                         <td className="py-4 px-6">
-                          <p className="font-bold text-sm text-gray-900">{order.studentName}</p>
-                          <p className="text-xs text-gray-500">{order.rollNumber}</p>
+                          <p className="font-bold text-sm text-gray-900">{order.user?.name || 'Guest'}</p>
+                          <p className="text-xs text-gray-500">{order.user?.phone || '—'}</p>
                         </td>
                         <td className="py-4 px-6 text-sm text-gray-600">
                           {order.items?.length || 0} {(order.items?.length || 0) === 1 ? "item" : "items"}

@@ -1,6 +1,6 @@
 import StatusBadge from '../customer/StatusBadge';
 
-export default function OrderRow({ order, onActionClick, onRowClick }) {
+export default function OrderRow({ order, onActionClick, onRowClick, isNew, isUpdated }) {
   const getActionButtons = () => {
     switch (order.status) {
       case 'Pending':
@@ -58,15 +58,17 @@ export default function OrderRow({ order, onActionClick, onRowClick }) {
     }
   };
 
+  const flashClass = isNew ? 'row-flash-new' : isUpdated ? 'row-flash-updated' : '';
+
   return (
     <tr 
       onClick={() => onRowClick(order)}
-      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${flashClass}`}
     >
-      <td className="py-4 px-6 font-mono text-sm font-semibold">{order._id}</td>
+      <td className="py-4 px-6 font-mono text-sm font-semibold">{order.orderId}</td>
       <td className="py-4 px-6">
-        <p className="font-bold text-sm text-gray-900">{order.studentName}</p>
-        <p className="text-xs text-gray-500">{order.rollNumber}</p>
+        <p className="font-bold text-sm text-gray-900">{order.user?.name || 'Guest'}</p>
+        <p className="text-xs text-gray-500">{order.user?.phone || '—'}</p>
       </td>
       <td className="py-4 px-6 text-sm text-gray-600">
         {order.items.length} {order.items.length === 1 ? 'item' : 'items'}

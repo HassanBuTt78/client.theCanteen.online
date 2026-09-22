@@ -11,7 +11,7 @@ export default function OrderDetailModal({ isOpen, order, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
-            <h2 className="text-xl font-black text-gray-900">{order._id}</h2>
+            <h2 className="text-xl font-black text-gray-900">{order.orderId}</h2>
             <p className="text-sm text-gray-500">Placed: {new Date(order.placedAt).toLocaleString()}</p>
           </div>
           <button 
@@ -28,8 +28,8 @@ export default function OrderDetailModal({ isOpen, order, onClose }) {
           <div className="flex justify-between items-start mb-6 bg-gray-50 p-4 rounded-xl">
             <div>
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Customer</p>
-              <p className="font-bold text-gray-900">{order.studentName}</p>
-              <p className="text-sm text-gray-600">{order.rollNumber}</p>
+              <p className="font-bold text-gray-900">{order.user?.name || 'Guest'}</p>
+              <p className="text-sm text-gray-600">{order.user?.phone || '—'}</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Status</p>

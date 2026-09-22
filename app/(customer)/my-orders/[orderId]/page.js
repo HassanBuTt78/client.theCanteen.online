@@ -71,7 +71,7 @@ export default function OrderDetailPage(props) {
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="text-xl font-black">{order._id}</h1>
+            <h1 className="text-xl font-black">{order.orderId}</h1>
             <p className="text-sm text-text-muted mt-1">{new Date(order.placedAt).toLocaleString()}</p>
           </div>
           <StatusBadge status={order.status} />

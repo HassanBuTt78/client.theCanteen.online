@@ -16,7 +16,7 @@ export default function FoodCard({ item }) {
 
   return (
     <div className={`relative bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col ${!item.isAvailable ? 'opacity-60' : ''}`}>
-      <img src={item.imageUrl} alt={item.name} className="w-full h-32 object-cover" />
+      <img src={item.imageUrl} alt={item.name} className="w-full h-44 object-cover" />
       
       {!item.isAvailable && (
         <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-bold px-2 py-1 rounded-md backdrop-blur-sm">

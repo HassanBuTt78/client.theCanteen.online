@@ -49,7 +49,7 @@ export default function AdminLayout({ children }) {
         {/* Mobile Warning Banner */}
         <div className="md:hidden bg-yellow-50 border-b border-yellow-200 p-3 text-center">
           <p className="text-yellow-800 text-xs font-bold">
-            ⚠️ For best experience, use a tablet or larger screen.
+            For best experience, use a tablet or larger screen.
           </p>
         </div>
 

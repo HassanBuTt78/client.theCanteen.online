@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Clock, Utensils, CheckCircle, CalendarDays } from "lucide-react";
+import { ShoppingBag, Clock, Utensils, CheckCircle, CalendarDays, Radio } from "lucide-react";
 import { useAdminStore } from "../../store/adminStore";
 import { useAuthStore } from "../../store/authStore";
 import StatCard from "../../components/admin/StatCard";
@@ -10,11 +10,28 @@ import OrderDetailModal from "../../components/admin/OrderDetailModal";
 import ConfirmModal from "../../components/admin/ConfirmModal";
 import SkeletonLoader from "../../components/admin/SkeletonLoader";
 
+const POLL_INTERVAL = 10_000; // 10 seconds
+
+const getTodayString = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 export default function LiveDashboardPage() {
   const router = useRouter();
   const isAdmin = useAuthStore((state) => state.isAdmin);
-  const { orders, loading, fetchOrders, updateOrderStatus } = useAdminStore();
+  const {
+    orders,
+    loading,
+    newOrderIds,
+    updatedOrderIds,
+    fetchLiveOrders,
+    pollLiveOrders,
+    updateOrderStatus,
+  } = useAdminStore();
   const [initialLoading, setInitialLoading] = useState(true);
+  const [lastPolled, setLastPolled] = useState(null);
+  const pollRef = useRef(null);
 
   // Modals state
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -33,6 +50,9 @@ export default function LiveDashboardPage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const filters = ["All", "Pending", "Confirmed", "Preparing", "Ready for Pickup", "Completed", "Cancelled"];
 
+  const todayDate = getTodayString();
+
+  // Initial fetch
   useEffect(() => {
     if (isAdmin === null) return;
     if (!isAdmin) {
@@ -41,16 +61,34 @@ export default function LiveDashboardPage() {
     }
 
     let cancelled = false;
-    fetchOrders()
+    fetchLiveOrders(todayDate)
       .catch(() => {})
       .finally(() => {
-        if (!cancelled) setInitialLoading(false);
+        if (!cancelled) {
+          setInitialLoading(false);
+          setLastPolled(new Date());
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isAdmin, router, fetchOrders]);
+  }, [isAdmin, router, fetchLiveOrders, todayDate]);
+
+  // Polling every 10 seconds
+  useEffect(() => {
+    if (!isAdmin || initialLoading) return;
+
+    pollRef.current = setInterval(() => {
+      pollLiveOrders(todayDate).then(() => {
+        setLastPolled(new Date());
+      });
+    }, POLL_INTERVAL);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [isAdmin, initialLoading, pollLiveOrders, todayDate]);
 
   // Derived stats
   const todayOrders = orders.length;
@@ -58,9 +96,9 @@ export default function LiveDashboardPage() {
   const preparingCount = orders.filter((o) => o.status === "Preparing").length;
   const readyCount = orders.filter((o) => o.status === "Ready for Pickup").length;
 
-  // Filtered and sorted orders
+  // Filtered and sorted orders — newest first for live dashboard
   const sortedOrders = [...orders].sort((a, b) => {
-    return new Date(a.placedAt) - new Date(b.placedAt);
+    return new Date(b.placedAt) - new Date(a.placedAt);
   });
 
   const filteredOrders =
@@ -78,7 +116,7 @@ export default function LiveDashboardPage() {
       orderId: order._id,
       newStatus,
       title,
-      message: `Are you sure you want to change order ${order._id} status to ${newStatus}?`,
+      message: `Are you sure you want to change order ${order.orderId} status to ${newStatus}?`,
       variant,
     });
   };
@@ -86,6 +124,8 @@ export default function LiveDashboardPage() {
   const handleConfirmAction = async () => {
     try {
       await updateOrderStatus(confirmModalState.orderId, confirmModalState.newStatus);
+      // Re-poll immediately after a status change
+      pollLiveOrders(todayDate).then(() => setLastPolled(new Date()));
     } catch (err) {
       // Could show a toast here
     }
@@ -96,20 +136,34 @@ export default function LiveDashboardPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      {/* Today's Date Header */}
-      <div className="flex items-center gap-3">
-        <CalendarDays size={20} className="text-primary" />
-        <p className="text-sm font-bold text-gray-500">
-          Showing data for{" "}
-          <span className="text-gray-900">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
+      {/* Today's Date Header with Live Indicator */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <CalendarDays size={20} className="text-primary" />
+          <p className="text-sm font-bold text-gray-500">
+            Showing data for{" "}
+            <span className="text-gray-900">
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
           </span>
-        </p>
+          <span className="text-xs font-bold text-green-700">Live</span>
+          {lastPolled && (
+            <span className="text-xs text-green-600/70 font-medium">
+              · {lastPolled.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Stats Row */}
@@ -210,6 +264,8 @@ export default function LiveDashboardPage() {
                     order={order}
                     onRowClick={handleRowClick}
                     onActionClick={handleActionClick}
+                    isNew={newOrderIds.has(order._id)}
+                    isUpdated={updatedOrderIds.has(order._id)}
                   />
                 ))}
               </tbody>
@@ -241,6 +297,20 @@ export default function LiveDashboardPage() {
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        @keyframes flash-new {
+          0% { background-color: rgb(220 252 231); }
+          100% { background-color: transparent; }
+        }
+        @keyframes flash-updated {
+          0% { background-color: rgb(254 249 195); }
+          100% { background-color: transparent; }
+        }
+        .row-flash-new {
+          animation: flash-new 3s ease-out forwards;
+        }
+        .row-flash-updated {
+          animation: flash-updated 3s ease-out forwards;
         }
       `}</style>
     </div>

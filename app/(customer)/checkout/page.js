@@ -5,7 +5,7 @@ import { useCartStore } from '../../../store/cartStore';
 import { useAuthStore } from '../../../store/authStore';
 import { getPickupSlots } from '../../../lib/api/pickupSlots';
 import { placeOrder } from '../../../lib/api/orders';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Banknote } from 'lucide-react';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -59,7 +59,7 @@ export default function CheckoutPage() {
 
       const order = await placeOrder(items, selectedSlot._id);
       clearCart();
-      router.push(`/order-confirmation/${order._id}?time=${encodeURIComponent(selectedSlot.label || selectedSlot.time)}`);
+      router.push(`/order-confirmation/${order.orderId}?time=${encodeURIComponent(selectedSlot.label || selectedSlot.time)}`);
     } catch (err) {
       setError(err.message || 'Failed to place order. Please try again.');
       setLoading(false);
@@ -124,7 +124,7 @@ export default function CheckoutPage() {
 
       {/* Section 3: Payment Note */}
       <section className="bg-blue-50 border border-blue-100 text-blue-800 p-4 rounded-xl text-sm font-semibold mb-4 flex items-start gap-3">
-        <span className="text-lg">💵</span>
+        <Banknote size={20} className="text-blue-500 shrink-0" />
         <p>Payment is cash on pickup at the counter. Please bring exact change if possible.</p>
       </section>
 

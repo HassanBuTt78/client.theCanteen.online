@@ -6,6 +6,7 @@ import {
   adminDeleteMenuItem,
   adminToggleAvailability,
   adminGetOrders,
+  adminGetLiveOrders,
   adminUpdateOrderStatus,
 } from '../lib/api/admin';
 
@@ -17,8 +18,11 @@ export const useAdminStore = create((set, get) => ({
   orders: [],
   menuItems: [],
   loading: false,
+  // Track IDs that are "new" or "updated" for live flash effect
+  newOrderIds: new Set(),
+  updatedOrderIds: new Set(),
 
-  /** Fetch orders from API */
+  /** Fetch orders from API (paginated, for reports etc.) */
   fetchOrders: async (query = {}) => {
     set({ loading: true });
     try {
@@ -28,6 +32,54 @@ export const useAdminStore = create((set, get) => ({
     } catch (err) {
       set({ loading: false });
       throw err;
+    }
+  },
+
+  /** Fetch live orders — initial load with loading state */
+  fetchLiveOrders: async (date) => {
+    set({ loading: true });
+    try {
+      const orders = await adminGetLiveOrders(date);
+      set({ orders, loading: false, newOrderIds: new Set(), updatedOrderIds: new Set() });
+      return orders;
+    } catch (err) {
+      set({ loading: false });
+      throw err;
+    }
+  },
+
+  /** Silent poll — no loading spinner, detects new & changed orders */
+  pollLiveOrders: async (date) => {
+    try {
+      const freshOrders = await adminGetLiveOrders(date);
+      const prev = get().orders;
+      const prevMap = new Map(prev.map((o) => [o._id, o]));
+
+      const newIds = new Set();
+      const updatedIds = new Set();
+
+      for (const order of freshOrders) {
+        const existing = prevMap.get(order._id);
+        if (!existing) {
+          newIds.add(order._id);
+        } else if (existing.status !== order.status) {
+          updatedIds.add(order._id);
+        }
+      }
+
+      set({ orders: freshOrders, newOrderIds: newIds, updatedOrderIds: updatedIds });
+
+      // Clear highlights after 3 seconds
+      if (newIds.size > 0 || updatedIds.size > 0) {
+        setTimeout(() => {
+          set({ newOrderIds: new Set(), updatedOrderIds: new Set() });
+        }, 3000);
+      }
+
+      return freshOrders;
+    } catch {
+      // Silent fail on poll
+      return get().orders;
     }
   },
 

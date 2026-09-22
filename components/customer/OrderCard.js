@@ -20,7 +20,7 @@ export default function OrderCard({ order }) {
     <Link href={`/my-orders/${order._id}`} className="block bg-white rounded-2xl p-4 shadow-sm border border-gray-100 active:scale-[0.98] transition-transform">
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h4 className="font-bold text-lg">{order._id}</h4>
+          <h4 className="font-bold text-lg">{order.orderId}</h4>
           <div className="flex items-center text-xs text-text-muted mt-1 gap-3">
             <span className="flex items-center gap-1"><Calendar size={12}/> {formatTime(order.placedAt)}</span>
             <span className="flex items-center gap-1"><Clock size={12}/> Pickup: {order.pickupTime}</span>
