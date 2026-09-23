@@ -5,11 +5,10 @@ export default function MenuItemRow({ item, onEdit, onDelete, onToggle }) {
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
       <td className="py-3 px-6">
         <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-          <img 
-            src={item.imageUrl} 
-            alt={item.name} 
+          <img
+            src={item.imageUrl}
+            alt={item.name}
             className="w-full h-full object-cover"
-            onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Food'; }}
           />
         </div>
       </td>
@@ -25,9 +24,9 @@ export default function MenuItemRow({ item, onEdit, onDelete, onToggle }) {
       <td className="py-4 px-6 text-sm font-bold">Rs. {item.price}</td>
       <td className="py-4 px-6">
         <label className="relative inline-flex items-center cursor-pointer">
-          <input 
-            type="checkbox" 
-            className="sr-only peer" 
+          <input
+            type="checkbox"
+            className="sr-only peer"
             checked={item.isAvailable}
             onChange={() => onToggle(item)}
           />
@@ -39,14 +38,14 @@ export default function MenuItemRow({ item, onEdit, onDelete, onToggle }) {
       </td>
       <td className="py-4 px-6">
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => onEdit(item)}
             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title="Edit Item"
           >
             <Edit size={18} />
           </button>
-          <button 
+          <button
             onClick={() => onDelete(item)}
             className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete Item"
