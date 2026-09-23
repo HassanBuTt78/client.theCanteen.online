@@ -21,7 +21,7 @@ export default function AdminSidebar() {
     localStorage.removeItem("isAdminLoggedIn");
     localStorage.removeItem("canteen_admin");
     localStorage.removeItem("canteen_token");
-    router.push("/admin/login");
+    router.refresh();
   };
 
   const navItems = [
